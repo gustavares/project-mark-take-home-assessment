@@ -1,12 +1,4 @@
-import express, { Request, Response } from 'express';
+import { Application } from './Application';
 
-const app = express();
-app.use(express.json());
-
-app.get('/health', (req: Request, res: Response) => {
-    res.status(200).json({ status: 'API is running!' });
-});
-
-app.listen(3000, () => {
-    console.log('Server running on port 3000');
-});
+const app = new Application();
+app.start(3000);
