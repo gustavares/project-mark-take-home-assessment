@@ -1,0 +1,18 @@
+services:
+  server:
+    build:
+      context: .
+    environment:
+      NODE_ENV: development
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/app
+      - /app/node_modules
+  db:
+    image: keinos/sqlite3:3.47.2
+    container_name: sqlite3
+    restart: always
+    command: tail -f /dev/null
+    volumes:
+      - ./db/:/root/db/
