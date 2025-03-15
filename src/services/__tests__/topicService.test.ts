@@ -1,6 +1,6 @@
 import { Topic } from "../../entities/Topic";
 import { TopicRepository } from "../../repositories/TopicRepository";
-import { ValidationError } from "../../shared/errors";
+import { DatabaseError, isError, ValidationError } from "../../shared/errors";
 import { TopicService } from "../TopicService";
 
 const topicRepositoryMock: jest.Mocked<TopicRepository> = {
@@ -28,5 +28,11 @@ describe('TopicService', () => {
 
     it('should throw ValidationError if content is empty', async () => {
         await expect(topicService.create('topic name', '')).rejects.toThrow(ValidationError);
+    });
+
+    it('should throw a DatabaseError when repository fails to create a topic', async () => {
+        topicRepositoryMock.create.mockRejectedValue(new DatabaseError('Failed to connect to database'));
+
+        await expect(topicService.create('Test topic', 'this is a test')).rejects.toThrow(DatabaseError);
     });
 });
