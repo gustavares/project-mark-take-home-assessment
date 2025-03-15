@@ -1,6 +1,6 @@
-import { Topic } from "../entities/Topic";
-import { TopicRepository } from "../repositories/TopicRepository";
-import { TopicService } from "./TopicService";
+import { Topic } from "../../entities/Topic";
+import { TopicRepository } from "../../repositories/TopicRepository";
+import { TopicService } from "../TopicService";
 
 const topicRepositoryMock: jest.Mocked<TopicRepository> = {
     create: jest.fn(),
