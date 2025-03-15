@@ -1,5 +1,6 @@
 import { Topic } from "../../entities/Topic";
 import { TopicRepository } from "../../repositories/TopicRepository";
+import { ValidationError } from "../../shared/errors";
 import { TopicService } from "../TopicService";
 
 const topicRepositoryMock: jest.Mocked<TopicRepository> = {
@@ -19,5 +20,13 @@ describe('TopicService', () => {
 
         expect(result).toEqual(mockTopic);
         expect(topicRepositoryMock.create).toHaveBeenCalledWith(expect.any(Topic));
+    });
+
+    it('should throw ValidationError if name is empty', async () => {
+        await expect(topicService.create('', 'test content')).rejects.toThrow(ValidationError);
+    });
+
+    it('should throw ValidationError if content is empty', async () => {
+        await expect(topicService.create('topic name', '')).rejects.toThrow(ValidationError);
     });
 });
