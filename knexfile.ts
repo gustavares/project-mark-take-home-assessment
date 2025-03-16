@@ -1,29 +1,31 @@
 import knex, { Knex } from "knex";
+const DEFAULT_DB_PATH = './db/sqlite';
 
-const knexConfig: Knex.Config = {
-  client: 'sqlite3',
-  connection: {
-    filename: './db/sqlite',
-  },
-  useNullAsDefault: true,
-  migrations: {
-    directory: './migrations',
-  },
-  seeds: {
-    directory: './seeds',
-  }
+const knexConfig = (dbPath: string) => {
+  return <Knex.Config>{
+    client: 'sqlite3',
+    connection: {
+      filename: dbPath,
+    },
+    useNullAsDefault: true,
+    migrations: {
+      directory: './migrations',
+    },
+    seeds: {
+      directory: './seeds',
+    }
+  };
 }
 
-const db = knex(knexConfig);
+const getDb = (dbPath = DEFAULT_DB_PATH) => knex(knexConfig(dbPath));
 
-const runMigrations = async () => {
+const runMigrations = async (db: Knex) => {
   try {
     await db.migrate.latest();
-    console.log('Migrations completed');
   } catch (error) {
     console.error('Error running migrations:', error);
     throw error;
   }
 }
 
-export { db, runMigrations };
+export { getDb, runMigrations };
