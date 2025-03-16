@@ -23,4 +23,18 @@ export class TopicService {
             throw error;
         }
     }
+
+    async update(id: string, content: string) {
+        const existingTopic = await this.topicRepository.findById(id);
+
+        if (!existingTopic) {
+            // TODO: create custom error for not found
+            throw new Error('Topic not found');
+        }
+
+        const newVersionTopic = TopicFactory.createNextVersion(existingTopic, content);
+        const createdTopic = await this.topicRepository.create(newVersionTopic);
+
+        return createdTopic;
+    }
 }

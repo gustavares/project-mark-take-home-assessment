@@ -29,4 +29,12 @@ export class SqliteTopicRepository implements TopicRepository {
             throw new DatabaseError('Database failed to insert');
         }
     }
+
+    findById(id: string): Promise<Topic> | void {
+        throw new Error("Method not implemented.");
+    }
+
+    update(topic: Topic): Promise<Topic> {
+        throw new Error("Method not implemented.");
+    }
 }
