@@ -1,0 +1,8 @@
+services:
+  db:
+    image: keinos/sqlite3:3.47.2
+    container_name: sqlite3
+    restart: always
+    command: tail -f /dev/null
+    volumes:
+      - ./db/:/db/
