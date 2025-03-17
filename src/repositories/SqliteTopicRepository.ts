@@ -30,7 +30,7 @@ export class SqliteTopicRepository implements TopicRepository {
         }
     }
 
-    findById(id: string): Promise<Topic> | void {
+    findById(id: number): Promise<Topic> | void {
         throw new Error("Method not implemented.");
     }
 

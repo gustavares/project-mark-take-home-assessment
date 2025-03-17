@@ -1,5 +1,5 @@
 export class Topic {
-    public id?: string;
+    public id?: number;
     public version: number;
     public createdAt: Date;
     public updatedAt: Date;
@@ -11,7 +11,7 @@ export class Topic {
         version?: number,
         createdAt?: Date,
         updatedAt?: Date,
-        id?: string,
+        id?: number,
         parentTopicId?: string
     ) {
         this.version = version ?? 1;

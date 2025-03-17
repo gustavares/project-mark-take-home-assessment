@@ -24,7 +24,7 @@ export class TopicService {
         }
     }
 
-    async update(id: string, content: string) {
+    async update(id: number, content: string) {
         const existingTopic = await this.topicRepository.findById(id);
 
         if (!existingTopic) {
