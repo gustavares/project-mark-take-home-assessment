@@ -1,4 +1,5 @@
 import { Topic } from "../../entities/Topic";
+import { TopicFactory } from "../../factories/TopicFactory";
 import { TopicRepository } from "../../repositories/TopicRepository";
 import { DatabaseError, ValidationError } from "../../shared/errors";
 import { TopicService } from "../TopicService";
@@ -36,6 +37,34 @@ describe('TopicService', () => {
             topicRepositoryMock.create.mockRejectedValue(new DatabaseError('Failed to connect to database'));
 
             await expect(topicService.create('Test topic', 'this is a test')).rejects.toThrow(DatabaseError);
+        });
+    });
+
+    describe('create() with parentTopicId', () => {
+        it('should create a topic linked to the parent', async () => {
+            const parentTopic = <Topic>{
+                id: 1,
+                version: 1,
+                name: 'Parent',
+                content: 'this is the parent topic',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            topicRepositoryMock.findById.mockResolvedValue(parentTopic);
+            const childTopic = <Topic>{
+                id: 2,
+                version: 1,
+                parentTopicId: 1,
+                name: 'Child',
+                content: 'this is the child topic',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            topicRepositoryMock.create.mockResolvedValue(childTopic);
+
+            const newTopic = await topicService.create(childTopic.name, childTopic.content, childTopic.parentTopicId);
+            expect(topicRepositoryMock.findById).toHaveBeenCalledWith(1);
+            expect(newTopic.parentTopicId).toBe(1);
         });
     });
 

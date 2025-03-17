@@ -35,13 +35,20 @@ export class SqliteTopicRepository implements TopicRepository {
         }
     }
 
-    async findById(id: number, version: number): Promise<Topic | null> {
+    async findById(id: number, version?: number): Promise<Topic | null> {
         try {
-            const result = await this.db('topic')
-                .where({ id, version })
+            let query = this.db('topic')
+                .where({ id })
                 .orderBy('version', 'desc')
                 .first();
 
+            if (version) {
+                query = this.db('topic')
+                    .where({ id, version })
+                    .first();
+            }
+
+            const result = await query;
             if (result) {
                 return new Topic(result.name, result.content, result.version, result.createdAt, result.updatedAt, result.id);
             }

@@ -6,7 +6,7 @@ import { ValidationError } from "../shared/errors";
 export class TopicService {
     constructor(private topicRepository: TopicRepository) { }
 
-    async create(name: string, content: string): Promise<Topic> {
+    async create(name: string, content: string, parentTopicId?: number): Promise<Topic> {
         if (!name.trim()) {
             throw new ValidationError('Topic name cannot be empty');
         }
@@ -14,8 +14,18 @@ export class TopicService {
             throw new ValidationError('Topic content cannot be empty');
         }
 
+        if (parentTopicId) {
+            console.log('searching parent topic')
+            const parentTopic = await this.topicRepository.findById(parentTopicId);
+
+            if (!parentTopic) {
+                // TODO: create custom NotFound error
+                throw new Error('Parent topic not found');
+            }
+        }
+
         try {
-            let topic = TopicFactory.createNew(name, content);
+            let topic = TopicFactory.createNew(name, content, parentTopicId);
             topic = await this.topicRepository.create(topic);
 
             return topic;

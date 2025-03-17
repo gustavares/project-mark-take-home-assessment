@@ -3,7 +3,7 @@ export class Topic {
     public version: number;
     public createdAt: Date;
     public updatedAt: Date;
-    public parentTopicId?: string;
+    public parentTopicId?: number;
 
     constructor(
         public name: string,
@@ -12,7 +12,7 @@ export class Topic {
         createdAt?: Date,
         updatedAt?: Date,
         id?: number,
-        parentTopicId?: string
+        parentTopicId?: number
     ) {
         this.version = version ?? 1;
         this.createdAt = createdAt ?? new Date();
