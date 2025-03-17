@@ -8,19 +8,24 @@ export class SqliteTopicRepository implements TopicRepository {
     constructor(private db: Knex) { }
 
     async create(topic: Topic): Promise<Topic> {
+        // TODO: use transaction to avoid race condition
+        if (!topic.id) {
+            const lastId = await this.db('topic').max('id as maxId').first();
+            topic.id = lastId?.maxId + 1 || 1;
+        }
         try {
-            const [{ id, version, createdAt, updatedAt, parentTopicId }] = await this.db('topic')
+            const [insertedTopic] = await this.db('topic')
                 .insert({
+                    id: topic.id,
                     name: topic.name,
                     content: topic.content,
                     version: topic.version,
-                    createdAt: topic.createdAt,
                     updatedAt: topic.updatedAt,
                     parentTopicId: topic.parentTopicId,
                 })
-                .returning(['id', 'version', 'createdAt', 'updatedAt', 'parentTopicId']);
+                .returning('*');
 
-            return new Topic(topic.name, topic.content, version, createdAt, updatedAt, id, parentTopicId);
+            return insertedTopic;
         } catch (error) {
             if (error instanceof Error) {
                 throw new DatabaseError(`Error inserting topic in the database: ${error.message}`);
@@ -30,11 +35,23 @@ export class SqliteTopicRepository implements TopicRepository {
         }
     }
 
-    findById(id: number): Promise<Topic> | void {
-        throw new Error("Method not implemented.");
-    }
+    async findById(id: number, version: number): Promise<Topic | null> {
+        try {
+            const result = await this.db('topic')
+                .where({ id, version })
+                .orderBy('version', 'desc')
+                .first();
 
-    update(topic: Topic): Promise<Topic> {
-        throw new Error("Method not implemented.");
+            if (result) {
+                return new Topic(result.name, result.content, result.version, result.createdAt, result.updatedAt, result.id);
+            }
+            return null;
+        } catch (error) {
+            if (error instanceof Error) {
+                throw new DatabaseError(`Error fetching topic from the database: ${error.message}`);
+            }
+            console.error(error);
+            throw new DatabaseError('Database failed to find topic');
+        }
     }
 }

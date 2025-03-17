@@ -5,7 +5,6 @@ import { TopicService } from "../TopicService";
 
 const topicRepositoryMock: jest.Mocked<TopicRepository> = {
     create: jest.fn(),
-    update: jest.fn(),
     findById: jest.fn(),
 }
 
@@ -15,7 +14,7 @@ describe('TopicService', () => {
     describe('create()', () => {
         it('should create a new topic successfully', async () => {
             const topicData = { name: 'Test Topic', content: 'This is a test' };
-            const mockTopic = new Topic(topicData.name, topicData.content, 1, new Date(), new Date(), '1');
+            const mockTopic = new Topic(topicData.name, topicData.content, 1, new Date(), new Date(), 1);
 
             topicRepositoryMock.create.mockResolvedValue(mockTopic);
 
@@ -42,7 +41,7 @@ describe('TopicService', () => {
 
     describe('update()', () => {
         it('should create a new version of a topic without modifying the previous', async () => {
-            const topicData = { id: '1', name: 'Previous Topic', content: 'This is a test' };
+            const topicData = { id: 1, name: 'Previous Topic', content: 'This is a test' };
             const mockPreviousTopic = new Topic(topicData.name, topicData.content, 1, new Date(), new Date(), topicData.id);
 
             const newContent = 'Updated content';
@@ -52,7 +51,7 @@ describe('TopicService', () => {
             topicRepositoryMock.create.mockResolvedValue(updatedTopic);
 
             // TODO: fix undefined id in topic
-            const result = await topicService.update(mockPreviousTopic.id as number, newContent);
+            const result = await topicService.update(mockPreviousTopic.id as number, mockPreviousTopic.version, newContent);
             expect(result).toMatchObject(updatedTopic);
             expect(topicRepositoryMock.create).toHaveBeenCalledWith(expect.objectContaining({
                 id: mockPreviousTopic.id,

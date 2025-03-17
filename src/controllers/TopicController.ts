@@ -11,6 +11,7 @@ export class TopicController {
 
     private setupRoutes() {
         this.router.post('/', this.create);
+        this.router.patch('/:id/version/:version', this.update);
     }
 
     private create = async (req: Request, res: Response) => {
@@ -19,6 +20,24 @@ export class TopicController {
             const topic = await this.topicService.create(name, content);
             res.status(201).json(topic);
         } catch (err) {
+            if (err instanceof AppError) {
+                res.status(err.statusCode).json({ message: err.message });
+            } else {
+                res.status(500).json({ message: 'Internal Server Error' });
+            }
+        }
+    }
+
+    private update = async (req: Request, res: Response) => {
+        const { id, version } = req.params;
+        const { content } = req.body;
+
+        try {
+            // TODO: better handle req param types
+            const topic = await this.topicService.update(Number(id), Number(version), content);
+            res.status(200).json(topic);
+        } catch (err) {
+            console.error(err)
             if (err instanceof AppError) {
                 res.status(err.statusCode).json({ message: err.message });
             } else {

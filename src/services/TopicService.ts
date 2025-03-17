@@ -24,8 +24,8 @@ export class TopicService {
         }
     }
 
-    async update(id: number, content: string) {
-        const existingTopic = await this.topicRepository.findById(id);
+    async update(id: number, version: number, content: string) {
+        const existingTopic = await this.topicRepository.findById(id, version);
 
         if (!existingTopic) {
             // TODO: create custom error for not found
