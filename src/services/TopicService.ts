@@ -6,6 +6,19 @@ import { NotFoundError, ValidationError } from "../shared/errors";
 export class TopicService {
     constructor(private topicRepository: TopicRepository) { }
 
+    async getByIdAndVersion(id: number, version: number): Promise<Topic> {
+        try {
+            const foundTopic = await this.topicRepository.findById(id, version);
+            if (!foundTopic) {
+                throw new NotFoundError(`Topic of id ${id} and version ${version} not found`);
+            }
+
+            return foundTopic;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async create(name: string, content: string, parentTopicId?: number): Promise<Topic> {
         if (!name.trim()) {
             throw new ValidationError('Topic name cannot be empty');
@@ -33,7 +46,6 @@ export class TopicService {
     }
 
     async getByIdWithSubtopics(id: number): Promise<Topic> {
-
         try {
             const foundTopic = await this.topicRepository.findByIdWithSubtopics(id);
             if (!foundTopic) {

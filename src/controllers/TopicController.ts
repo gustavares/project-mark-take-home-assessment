@@ -10,11 +10,27 @@ export class TopicController {
     }
 
     private setupRoutes() {
+        this.router.get('/:id/version/:version', this.getSpecificVersion);
         this.router.get('/:id/subtopics', this.getWithSubtopics);
         this.router.post('/', this.create);
         // TODO: update route to be just /:id, users should not be able to update a previous version of a topic, just the latest one
         this.router.patch('/:id', this.update);
     }
+
+    private getSpecificVersion = async (req: Request, res: Response) => {
+        try {
+            const { id, version } = req.params;
+            const topic = await this.topicService.getByIdAndVersion(Number(id), Number(version));
+            res.status(200).json(topic);
+        } catch (err) {
+            if (err instanceof AppError) {
+                res.status(err.statusCode).json({ message: err.message });
+            } else {
+                res.status(500).json({ message: 'Internal Server Error' });
+            }
+        }
+    }
+
     private getWithSubtopics = async (req: Request, res: Response) => {
         try {
             const { id } = req.params;

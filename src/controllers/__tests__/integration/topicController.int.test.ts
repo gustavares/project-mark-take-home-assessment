@@ -66,6 +66,46 @@ describe('TopicController', () => {
             await stop(db, application);
         });
 
+        it('should retrieve the correct version of the topic', async () => {
+            const topicData = <Topic>{
+                name: 'Test Topic',
+                content: 'This is the original content',
+            };
+
+            await createTopic(topicData);
+            const updatedTopic = await request(application.app)
+                .patch(`/topic/${1}`)
+                .send({
+                    content: 'This is the new content',
+                })
+                .set('Accept', 'application/json');
+
+            const { body: topicVersion1, status } = await request(application.app).get(`/topic/${1}/version/${1}`);
+
+            expect(status).toBe(200);
+            expect(topicVersion1.id).toBe(1);
+            expect(topicVersion1.version).toBe(1);
+            expect(topicVersion1.content).toBe('This is the original content');
+
+            const { body: topicVersion2, status: status2 } = await request(application.app).get(`/topic/${1}/version/${2}`);
+            expect(status2).toBe(200);
+            expect(topicVersion2.id).toBe(1);
+            expect(topicVersion2.version).toBe(2);
+            expect(topicVersion2.content).toBe('This is the new content');
+        });
+    });
+
+    describe('GET /topic/:id/subtopics', () => {
+        beforeEach(async () => {
+            const { setupDb, setupApp } = await setup();
+            db = setupDb;
+            application = setupApp;
+        });
+
+        afterEach(async () => {
+            await stop(db, application);
+        });
+
         it('should retrieve a topic and all its subtopics', async () => {
             const childTopicId2 = <Topic>{
                 version: 1,
