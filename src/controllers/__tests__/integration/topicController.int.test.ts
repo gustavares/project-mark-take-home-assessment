@@ -41,6 +41,90 @@ async function stop(db: Knex, application: Application) {
 }
 
 describe('TopicController', () => {
+
+    async function createTopic(topic: Topic): Promise<Topic> {
+        const { body } = await request(application.app)
+            .post('/topic')
+            .send({
+                name: topic.name,
+                content: topic.content,
+                parentTopicId: topic.parentTopicId
+            })
+            .set('Accept', 'application/json');
+
+        return body;
+    }
+
+    describe('GET /topic/:id/subtopics', () => {
+        beforeEach(async () => {
+            const { setupDb, setupApp } = await setup();
+            db = setupDb;
+            application = setupApp;
+        });
+
+        afterEach(async () => {
+            await stop(db, application);
+        });
+
+        it('should retrieve a topic and all its subtopics', async () => {
+            const childTopicId2 = <Topic>{
+                version: 1,
+                name: 'Child 1',
+                content: 'this is the child 1 topic',
+                parentTopicId: 1,
+            };
+            const childTopicId3 = <Topic>{
+                version: 1,
+                name: 'Child 2',
+                content: 'this is the child 2 topic',
+                parentTopicId: 1
+            };
+            const childTopicId4 = <Topic>{
+                version: 1,
+                name: 'Child 3',
+                content: 'this is the child 3 topic',
+                parentTopicId: 2
+            };
+            const childTopicId5 = <Topic>{
+                version: 1,
+                name: 'Child 4',
+                content: 'this is the child 4 topic',
+                parentTopicId: 4
+            };
+            const parentTopic = <Topic>{
+                version: 1,
+                name: 'Parent',
+                content: 'this is the parent topic',
+            };
+
+            // TODO: Fix, can't use promise.all because ids increment are handled by the repository layer without transactions
+            const insertedParentTopic = await createTopic(parentTopic);
+            await createTopic(childTopicId2);
+            await createTopic(childTopicId3);
+            await createTopic(childTopicId4);
+            await createTopic(childTopicId5);
+
+            const { body: parentTopicRetrieved, status } = await request(application.app).get(`/topic/${Number(insertedParentTopic.id)}/subtopics`);
+
+            expect(status).toBe(200);
+            expect(parentTopicRetrieved.subtopics).toHaveLength(2);
+
+            const [childId2, childId3] = parentTopicRetrieved.subtopics;
+            expect(childId2.id).toBe(2);
+            expect(childId3.id).toBe(3);
+
+            expect(childId2.subtopics).toHaveLength(1);
+            expect(childId2.subtopics[0].id).toBe(4);
+
+            expect(childId3.subtopics).toHaveLength(0);
+
+            const [childId4] = childId2.subtopics;
+
+            expect(childId4.subtopics).toHaveLength(1);
+            expect(childId4.subtopics[0].id).toBe(5);
+        });
+    });
+
     describe('POST /topic with parentTopicId', () => {
         beforeEach(async () => {
             const { setupDb, setupApp } = await setup();

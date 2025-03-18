@@ -15,7 +15,6 @@ export class TopicService {
         }
 
         if (parentTopicId) {
-            console.log('searching parent topic')
             const parentTopic = await this.topicRepository.findById(parentTopicId);
 
             if (!parentTopic) {
@@ -28,6 +27,20 @@ export class TopicService {
             topic = await this.topicRepository.create(topic);
 
             return topic;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async getByIdWithSubtopics(id: number): Promise<Topic> {
+
+        try {
+            const foundTopic = await this.topicRepository.findByIdWithSubtopics(id);
+            if (!foundTopic) {
+                throw new NotFoundError(`Topic of id ${id} not found`);
+            }
+
+            return foundTopic;
         } catch (error) {
             throw error;
         }

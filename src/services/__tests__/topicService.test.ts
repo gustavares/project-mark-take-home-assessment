@@ -7,6 +7,7 @@ import { TopicService } from "../TopicService";
 const topicRepositoryMock: jest.Mocked<TopicRepository> = {
     create: jest.fn(),
     findById: jest.fn(),
+    findByIdWithSubtopics: jest.fn()
 }
 
 const topicService = new TopicService(topicRepositoryMock);

@@ -1,9 +1,10 @@
 export class Topic {
     public id?: number;
-    public version: number;
-    public createdAt: Date;
+    public readonly version: number;
+    public readonly createdAt: Date;
     public updatedAt: Date;
     public parentTopicId?: number;
+    public subtopics: Topic[];
 
     constructor(
         public name: string,
@@ -12,12 +13,14 @@ export class Topic {
         createdAt?: Date,
         updatedAt?: Date,
         id?: number,
-        parentTopicId?: number
+        parentTopicId?: number,
+        subtopics: Topic[] = []
     ) {
         this.version = version ?? 1;
         this.createdAt = createdAt ?? new Date();
         this.updatedAt = updatedAt ?? new Date();
         this.id = id;
         this.parentTopicId = parentTopicId;
+        this.subtopics = subtopics;
     }
 }

@@ -61,4 +61,26 @@ export class SqliteTopicRepository implements TopicRepository {
             throw new DatabaseError('Database failed to find topic');
         }
     }
+
+    async findByIdWithSubtopics(id: number): Promise<Topic | null> {
+        const root = await this.findById(id);
+        if (!root) return null;
+
+        const subtopics = await this.findSubtopics(id);
+        return { ...root, subtopics };
+    }
+
+    private async findSubtopics(parentId: number): Promise<Topic[]> {
+        console.log('parentId ', parentId);
+        const directChildren = await this.db('topic').where({ parentTopicId: parentId });
+
+        const subtopics: Topic[] = await Promise.all(
+            directChildren.map(async child => ({
+                ...child,
+                subtopics: await this.findSubtopics(child.id)
+            }))
+        );
+
+        return subtopics;
+    }
 }
