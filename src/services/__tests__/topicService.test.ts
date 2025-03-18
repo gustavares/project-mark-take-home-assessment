@@ -80,7 +80,7 @@ describe('TopicService', () => {
             topicRepositoryMock.create.mockResolvedValue(updatedTopic);
 
             // TODO: fix undefined id in topic
-            const result = await topicService.update(mockPreviousTopic.id as number, mockPreviousTopic.version, newContent);
+            const result = await topicService.update(mockPreviousTopic.id as number, newContent);
             expect(result).toMatchObject(updatedTopic);
             expect(topicRepositoryMock.create).toHaveBeenCalledWith(expect.objectContaining({
                 id: mockPreviousTopic.id,

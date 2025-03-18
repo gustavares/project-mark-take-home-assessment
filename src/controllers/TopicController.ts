@@ -12,7 +12,7 @@ export class TopicController {
     private setupRoutes() {
         this.router.post('/', this.create);
         // TODO: update route to be just /:id, users should not be able to update a previous version of a topic, just the latest one
-        this.router.patch('/:id/version/:version', this.update);
+        this.router.patch('/:id', this.update);
     }
 
     private create = async (req: Request, res: Response) => {
@@ -30,12 +30,12 @@ export class TopicController {
     }
 
     private update = async (req: Request, res: Response) => {
-        const { id, version } = req.params;
+        const { id } = req.params;
         const { content } = req.body;
 
         try {
             // TODO: better handle req param types
-            const topic = await this.topicService.update(Number(id), Number(version), content);
+            const topic = await this.topicService.update(Number(id), content);
             res.status(200).json(topic);
         } catch (err) {
             console.error(err)

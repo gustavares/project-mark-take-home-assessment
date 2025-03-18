@@ -33,8 +33,8 @@ export class TopicService {
         }
     }
 
-    async update(id: number, version: number, content: string) {
-        const existingTopic = await this.topicRepository.findById(id, version);
+    async update(id: number, content: string) {
+        const existingTopic = await this.topicRepository.findById(id);
 
         if (!existingTopic) {
             throw new NotFoundError(`Topic of id ${id} not found`);

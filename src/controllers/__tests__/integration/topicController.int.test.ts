@@ -153,7 +153,7 @@ describe('TopicController', () => {
         });
     });
 
-    describe('PATCH /topic', () => {
+    describe('PATCH /topic/:id', () => {
         let db: Knex;
         let application: Application;
         let topicService: TopicService;
@@ -187,7 +187,7 @@ describe('TopicController', () => {
             const updatedTopic = { ...previousTopic, content: newContent, version: previousTopic.version + 1 };
 
             const response = await request(application.app)
-                .patch(`/topic/${topicData.id}/version/${previousTopic.version}`)
+                .patch(`/topic/${topicData.id}`)
                 .send({
                     content: newContent,
                 })
