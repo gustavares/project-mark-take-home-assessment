@@ -73,7 +73,7 @@ describe('TopicController', () => {
             };
 
             await createTopic(topicData);
-            const updatedTopic = await request(application.app)
+            await request(application.app)
                 .patch(`/topic/${1}`)
                 .send({
                     content: 'This is the new content',
