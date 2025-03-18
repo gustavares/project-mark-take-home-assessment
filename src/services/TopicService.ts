@@ -1,7 +1,7 @@
 import { Topic } from "../entities/Topic";
 import { TopicFactory } from "../factories/TopicFactory";
 import { TopicRepository } from "../repositories/TopicRepository";
-import { ValidationError } from "../shared/errors";
+import { NotFoundError, ValidationError } from "../shared/errors";
 
 export class TopicService {
     constructor(private topicRepository: TopicRepository) { }
@@ -19,8 +19,7 @@ export class TopicService {
             const parentTopic = await this.topicRepository.findById(parentTopicId);
 
             if (!parentTopic) {
-                // TODO: create custom NotFound error
-                throw new Error('Parent topic not found');
+                throw new NotFoundError(`Parent topic of id ${parentTopicId} not found`);
             }
         }
 
@@ -38,8 +37,7 @@ export class TopicService {
         const existingTopic = await this.topicRepository.findById(id, version);
 
         if (!existingTopic) {
-            // TODO: create custom error for not found
-            throw new Error('Topic not found');
+            throw new NotFoundError(`Topic of id ${id} not found`);
         }
 
         const newVersionTopic = TopicFactory.createNextVersion(existingTopic, content);
