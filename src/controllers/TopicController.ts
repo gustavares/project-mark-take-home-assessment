@@ -11,13 +11,14 @@ export class TopicController {
 
     private setupRoutes() {
         this.router.post('/', this.create);
+        // TODO: update route to be just /:id, users should not be able to update a previous version of a topic, just the latest one
         this.router.patch('/:id/version/:version', this.update);
     }
 
     private create = async (req: Request, res: Response) => {
         try {
-            const { name, content } = req.body;
-            const topic = await this.topicService.create(name, content);
+            const { name, content, parentTopicId } = req.body;
+            const topic = await this.topicService.create(name, content, parentTopicId);
             res.status(201).json(topic);
         } catch (err) {
             if (err instanceof AppError) {

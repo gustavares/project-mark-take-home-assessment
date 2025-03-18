@@ -8,7 +8,7 @@ export async function up(knex: Knex): Promise<void> {
         table.integer('version').defaultTo(1);
         table.timestamp('createdAt').defaultTo(knex.fn.now());
         table.timestamp('updatedAt').defaultTo(knex.fn.now());
-        table.string('parentTopicId').nullable();
+        table.integer('parentTopicId').nullable().references('id').inTable('topic').onDelete('SET NULL');;
 
         table.primary(['id', 'version']);
     });
