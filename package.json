@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "test": "jest",
-    "test:integration": "docker compose -f docker-compose.integration.yml up -d && jest --config jest.integration.config.js --testPathPattern=__tests__/integration --runInBand && docker compose -f docker-compose.integration.yml down",
+    "test:integration": "jest --config jest.integration.config.js --testPathPattern=__tests__/integration --runInBand",
     "start": "tsx watch src/index.ts",
     "lint": "npx eslint ./src/**",
     "lint:fix": "npx eslint ./src/** --fix",
