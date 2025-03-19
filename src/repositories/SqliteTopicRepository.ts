@@ -2,17 +2,13 @@ import { Knex } from "knex";
 import { TopicRepository } from "./TopicRepository";
 import { Topic } from "../entities/Topic";
 import { DatabaseError } from "../shared/errors";
+import { Resource } from "../entities/Resource";
 
 export class SqliteTopicRepository implements TopicRepository {
 
     constructor(private db: Knex) { }
 
     async create(topic: Topic): Promise<Topic> {
-        // TODO: use transaction to avoid race condition
-        if (!topic.id) {
-            const lastId = await this.db('topic').max('id as maxId').first();
-            topic.id = lastId?.maxId + 1 || 1;
-        }
         try {
             const [insertedTopic] = await this.db('topic')
                 .insert({
@@ -35,7 +31,7 @@ export class SqliteTopicRepository implements TopicRepository {
         }
     }
 
-    async findById(id: number, version?: number): Promise<Topic | null> {
+    async findById(id: string, version?: number): Promise<Topic | null> {
         try {
             let query = this.db('topic')
                 .where({ id })
@@ -50,7 +46,19 @@ export class SqliteTopicRepository implements TopicRepository {
 
             const result = await query;
             if (result) {
-                return new Topic(result.name, result.content, result.version, result.createdAt, result.updatedAt, result.id);
+                const topic = new Topic(
+                    result.id,
+                    result.name,
+                    result.content,
+                    result.version,
+                    result.createdAt,
+                    result.updatedAt,
+                );
+                // TODO: should use left join
+                const resources = await this.findResources(id, result.version);
+                topic.resources = resources;
+
+                return topic;
             }
             return null;
         } catch (error) {
@@ -62,7 +70,7 @@ export class SqliteTopicRepository implements TopicRepository {
         }
     }
 
-    async findByIdWithSubtopics(id: number): Promise<Topic | null> {
+    async findByIdWithSubtopics(id: string): Promise<Topic | null> {
         const root = await this.findById(id);
         if (!root) return null;
 
@@ -70,8 +78,7 @@ export class SqliteTopicRepository implements TopicRepository {
         return { ...root, subtopics };
     }
 
-    private async findSubtopics(parentId: number): Promise<Topic[]> {
-        console.log('parentId ', parentId);
+    private async findSubtopics(parentId: string): Promise<Topic[]> {
         const directChildren = await this.db('topic').where({ parentTopicId: parentId });
 
         const subtopics: Topic[] = await Promise.all(
@@ -82,5 +89,11 @@ export class SqliteTopicRepository implements TopicRepository {
         );
 
         return subtopics;
+    }
+
+    private async findResources(topicId: string, topicVersion: number): Promise<Resource[]> {
+        const resources = await this.db('resource').where({ topicId, topicVersion });
+
+        return resources;
     }
 }

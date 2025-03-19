@@ -8,6 +8,7 @@ import { TopicService } from '../../../services/TopicService';
 import { TopicRepository } from '../../../repositories/TopicRepository';
 import { SqliteTopicRepository } from '../../../repositories/SqliteTopicRepository';
 import { Topic } from '../../../entities/Topic';
+import { PatchTopicDTO, TopicDTO } from '../../../dtos/topic.dto';
 
 const DB_PATH = './db.integration/sqlite';
 
@@ -42,7 +43,7 @@ async function stop(db: Knex, application: Application) {
 
 describe('TopicController', () => {
 
-    async function createTopic(topic: Topic): Promise<Topic> {
+    async function createTopic(topic: TopicDTO): Promise<Topic> {
         const { body } = await request(application.app)
             .post('/topic')
             .send({
@@ -67,29 +68,29 @@ describe('TopicController', () => {
         });
 
         it('should retrieve the correct version of the topic', async () => {
-            const topicData = <Topic>{
+            const topicData = <TopicDTO>{
                 name: 'Test Topic',
                 content: 'This is the original content',
             };
 
-            await createTopic(topicData);
+            const topic = await createTopic(topicData);
             await request(application.app)
-                .patch(`/topic/${1}`)
+                .patch(`/topic/${topic.id}`)
                 .send({
                     content: 'This is the new content',
                 })
                 .set('Accept', 'application/json');
 
-            const { body: topicVersion1, status } = await request(application.app).get(`/topic/${1}/version/${1}`);
+            const { body: topicVersion1, status } = await request(application.app).get(`/topic/${topic.id}/version/${1}`);
 
             expect(status).toBe(200);
-            expect(topicVersion1.id).toBe(1);
+            expect(topicVersion1.id).toBe(topic.id);
             expect(topicVersion1.version).toBe(1);
             expect(topicVersion1.content).toBe('This is the original content');
 
-            const { body: topicVersion2, status: status2 } = await request(application.app).get(`/topic/${1}/version/${2}`);
+            const { body: topicVersion2, status: status2 } = await request(application.app).get(`/topic/${topic.id}/version/${2}`);
             expect(status2).toBe(200);
-            expect(topicVersion2.id).toBe(1);
+            expect(topicVersion2.id).toBe(topic.id);
             expect(topicVersion2.version).toBe(2);
             expect(topicVersion2.content).toBe('This is the new content');
         });
@@ -107,61 +108,53 @@ describe('TopicController', () => {
         });
 
         it('should retrieve a topic and all its subtopics', async () => {
-            const childTopicId2 = <Topic>{
-                version: 1,
-                name: 'Child 1',
-                content: 'this is the child 1 topic',
-                parentTopicId: 1,
-            };
-            const childTopicId3 = <Topic>{
-                version: 1,
-                name: 'Child 2',
-                content: 'this is the child 2 topic',
-                parentTopicId: 1
-            };
-            const childTopicId4 = <Topic>{
-                version: 1,
-                name: 'Child 3',
-                content: 'this is the child 3 topic',
-                parentTopicId: 2
-            };
-            const childTopicId5 = <Topic>{
-                version: 1,
-                name: 'Child 4',
-                content: 'this is the child 4 topic',
-                parentTopicId: 4
-            };
-            const parentTopic = <Topic>{
-                version: 1,
+            const insertedParentTopic = await createTopic({
                 name: 'Parent',
                 content: 'this is the parent topic',
-            };
+                resources: []
+            });
+            const childTopic1 = await createTopic({
+                name: 'Child 1',
+                content: 'this is the child 1 topic',
+                parentTopicId: insertedParentTopic.id,
+                resources: []
+            });
+            const childTopic2 = await createTopic({
+                name: 'Child 2',
+                content: 'this is the child 2 topic',
+                parentTopicId: insertedParentTopic.id,
+                resources: []
+            });
+            const childTopic3 = await createTopic({
+                name: 'Child 3',
+                content: 'this is the child 3 topic',
+                parentTopicId: childTopic1.id,
+                resources: []
+            });
+            const childTopic4 = await createTopic({
+                name: 'Child 4',
+                content: 'this is the child 4 topic',
+                parentTopicId: childTopic3.id,
+                resources: []
+            });
 
-            // TODO: Fix, can't use promise.all because ids increment are handled by the repository layer without transactions
-            const insertedParentTopic = await createTopic(parentTopic);
-            await createTopic(childTopicId2);
-            await createTopic(childTopicId3);
-            await createTopic(childTopicId4);
-            await createTopic(childTopicId5);
-
-            const { body: parentTopicRetrieved, status } = await request(application.app).get(`/topic/${Number(insertedParentTopic.id)}/subtopics`);
+            const { body: parentTopicRetrieved, status } = await request(application.app).get(`/topic/${insertedParentTopic.id}/subtopics`);
 
             expect(status).toBe(200);
             expect(parentTopicRetrieved.subtopics).toHaveLength(2);
 
-            const [childId2, childId3] = parentTopicRetrieved.subtopics;
-            expect(childId2.id).toBe(2);
-            expect(childId3.id).toBe(3);
+            const [child1, child2] = parentTopicRetrieved.subtopics;
+            expect(child1.id).toBe(childTopic1.id);
+            expect(child2.id).toBe(childTopic2.id);
 
-            expect(childId2.subtopics).toHaveLength(1);
-            expect(childId2.subtopics[0].id).toBe(4);
+            expect(child1.subtopics).toHaveLength(1);
+            expect(child2.subtopics).toHaveLength(0);
 
-            expect(childId3.subtopics).toHaveLength(0);
+            const [child3] = child1.subtopics;
+            expect(child3.id).toBe(childTopic3.id);
 
-            const [childId4] = childId2.subtopics;
-
-            expect(childId4.subtopics).toHaveLength(1);
-            expect(childId4.subtopics[0].id).toBe(5);
+            expect(child3.subtopics).toHaveLength(1);
+            expect(child3.subtopics[0].id).toBe(childTopic4.id);
         });
     });
 
@@ -177,23 +170,16 @@ describe('TopicController', () => {
         });
         describe('given parent topic exists', () => {
             it('should create a topic linked to given parent topic', async () => {
-                const parentTopicData = <Topic>{
-                    version: 1,
-                    name: 'Parent',
-                    content: 'this is the parent topic'
-                };
-                const childTopicData = <Topic>{
-                    version: 1,
-                    parentTopicId: 1,
+                const childTopicData = <TopicDTO>{
                     name: 'Child',
                     content: 'this is the child topic',
                 };
 
-                const { body: insertedParentTopic } = await request(application.app)
+                const { body: parentTopic } = await request(application.app)
                     .post('/topic')
                     .send({
-                        name: parentTopicData.name,
-                        content: parentTopicData.content,
+                        name: 'Parent',
+                        content: 'this is the parent topic'
                     })
                     .set('Accept', 'application/json');
 
@@ -202,25 +188,26 @@ describe('TopicController', () => {
                     .send({
                         name: childTopicData.name,
                         content: childTopicData.content,
-                        parentTopicId: childTopicData.parentTopicId
+                        parentTopicId: parentTopic.id
                     })
                     .set('Accept', 'application/json');
 
+                const childTopic = response.body;
                 expect(response.status).toBe(201);
-                expect(response.body).toHaveProperty('id');;
-                expect(response.body.name).toBe(childTopicData.name);
-                expect(response.body.content).toBe(childTopicData.content);
-                expect(response.body.parentTopicId).toBe(insertedParentTopic?.id);
+                expect(childTopic).toHaveProperty('id');;
+                expect(childTopic.name).toBe(childTopicData.name);
+                expect(childTopic.content).toBe(childTopicData.content);
+                expect(childTopic.parentTopicId).toBe(parentTopic?.id);
 
                 const insertedChildTopic = await db<Topic>('topic')
-                    .where({ id: response.body.id, version: response.body.version })
+                    .where({ id: childTopic.id, version: childTopic.version })
                     .first();
-                expect(insertedChildTopic).toBeDefined();
-                expect(insertedChildTopic?.id).toBe(2);
-                expect(insertedChildTopic?.name).toBe(childTopicData.name);
-                expect(insertedChildTopic?.content).toBe(childTopicData.content);
+                expect(insertedChildTopic?.id).toBeDefined();
+                expect(insertedChildTopic?.id).toBe(childTopic.id);
+                expect(insertedChildTopic?.name).toBe(childTopic.name);
+                expect(insertedChildTopic?.content).toBe(childTopic.content);
                 expect(insertedChildTopic?.version).toBe(1);
-                expect(insertedChildTopic?.parentTopicId).toBe(insertedParentTopic?.id);
+                expect(insertedChildTopic?.parentTopicId).toBe(parentTopic?.id);
             });
         });
     });

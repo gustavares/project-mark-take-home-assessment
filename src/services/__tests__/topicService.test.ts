@@ -1,3 +1,4 @@
+import { Resource } from "../../entities/Resource";
 import { Topic } from "../../entities/Topic";
 import { TopicFactory } from "../../factories/TopicFactory";
 import { TopicRepository } from "../../repositories/TopicRepository";
@@ -15,14 +16,17 @@ const topicService = new TopicService(topicRepositoryMock);
 describe('TopicService', () => {
     describe('create()', () => {
         it('should create a new topic successfully', async () => {
-            const topicData = { name: 'Test Topic', content: 'This is a test' };
-            const mockTopic = new Topic(topicData.name, topicData.content, 1, new Date(), new Date(), 1);
+            const mockTopic = TopicFactory.createNew({
+                name: 'Test Topic',
+                content: 'This is a test',
+                resources: []
+            });
 
             topicRepositoryMock.create.mockResolvedValue(mockTopic);
 
-            const result = await topicService.create(topicData.name, topicData.content);
+            const result = await topicService.create(mockTopic.name, mockTopic.content);
 
-            expect(result).toEqual(mockTopic);
+            expect(result.id).toEqual(mockTopic.id);
             expect(topicRepositoryMock.create).toHaveBeenCalledWith(expect.any(Topic));
         });
 
@@ -43,36 +47,33 @@ describe('TopicService', () => {
 
     describe('create() with parentTopicId', () => {
         it('should create a topic linked to the parent', async () => {
-            const parentTopic = <Topic>{
-                id: 1,
-                version: 1,
+            const parentTopic = TopicFactory.createNew({
                 name: 'Parent',
                 content: 'this is the parent topic',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
+                resources: []
+            });
             topicRepositoryMock.findById.mockResolvedValue(parentTopic);
-            const childTopic = <Topic>{
-                id: 2,
-                version: 1,
-                parentTopicId: 1,
+            const childTopic = TopicFactory.createNew({
+                parentTopicId: parentTopic.id,
                 name: 'Child',
                 content: 'this is the child topic',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
+                resources: []
+            });
             topicRepositoryMock.create.mockResolvedValue(childTopic);
 
             const newTopic = await topicService.create(childTopic.name, childTopic.content, childTopic.parentTopicId);
-            expect(topicRepositoryMock.findById).toHaveBeenCalledWith(1);
-            expect(newTopic.parentTopicId).toBe(1);
+            expect(topicRepositoryMock.findById).toHaveBeenCalledWith(parentTopic.id);
+            expect(newTopic.parentTopicId).toBe(parentTopic.id);
         });
     });
 
     describe('update()', () => {
         it('should create a new version of a topic without modifying the previous', async () => {
-            const topicData = { id: 1, name: 'Previous Topic', content: 'This is a test' };
-            const mockPreviousTopic = new Topic(topicData.name, topicData.content, 1, new Date(), new Date(), topicData.id);
+            const mockPreviousTopic = TopicFactory.createNew({
+                name: 'Previous Topic',
+                content: 'This is a test',
+                resources: []
+            });
 
             const newContent = 'Updated content';
             const updatedTopic = { ...mockPreviousTopic, content: newContent, version: mockPreviousTopic.version + 1 };
@@ -80,8 +81,7 @@ describe('TopicService', () => {
             topicRepositoryMock.findById.mockResolvedValue(mockPreviousTopic);
             topicRepositoryMock.create.mockResolvedValue(updatedTopic);
 
-            // TODO: fix undefined id in topic
-            const result = await topicService.update(mockPreviousTopic.id as number, newContent);
+            const result = await topicService.update(mockPreviousTopic.id, [], newContent);
             expect(result).toMatchObject(updatedTopic);
             expect(topicRepositoryMock.create).toHaveBeenCalledWith(expect.objectContaining({
                 id: mockPreviousTopic.id,

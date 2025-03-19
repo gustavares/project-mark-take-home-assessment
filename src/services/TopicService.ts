@@ -1,3 +1,4 @@
+import { Resource } from "../entities/Resource";
 import { Topic } from "../entities/Topic";
 import { TopicFactory } from "../factories/TopicFactory";
 import { TopicRepository } from "../repositories/TopicRepository";
@@ -6,7 +7,7 @@ import { NotFoundError, ValidationError } from "../shared/errors";
 export class TopicService {
     constructor(private topicRepository: TopicRepository) { }
 
-    async getByIdAndVersion(id: number, version: number): Promise<Topic> {
+    async getByIdAndVersion(id: string, version: number): Promise<Topic> {
         try {
             const foundTopic = await this.topicRepository.findById(id, version);
             if (!foundTopic) {
@@ -19,7 +20,7 @@ export class TopicService {
         }
     }
 
-    async create(name: string, content: string, parentTopicId?: number): Promise<Topic> {
+    async create(name: string, content: string, parentTopicId?: string): Promise<Topic> {
         if (!name.trim()) {
             throw new ValidationError('Topic name cannot be empty');
         }
@@ -36,7 +37,12 @@ export class TopicService {
         }
 
         try {
-            let topic = TopicFactory.createNew(name, content, parentTopicId);
+            let topic = TopicFactory.createNew({
+                name,
+                content,
+                parentTopicId,
+                resources: []
+            });
             topic = await this.topicRepository.create(topic);
 
             return topic;
@@ -45,7 +51,7 @@ export class TopicService {
         }
     }
 
-    async getByIdWithSubtopics(id: number): Promise<Topic> {
+    async getByIdWithSubtopics(id: string): Promise<Topic> {
         try {
             const foundTopic = await this.topicRepository.findByIdWithSubtopics(id);
             if (!foundTopic) {
@@ -58,14 +64,14 @@ export class TopicService {
         }
     }
 
-    async update(id: number, content: string) {
+    async update(id: string, resources: Resource[], content?: string) {
         const existingTopic = await this.topicRepository.findById(id);
 
         if (!existingTopic) {
             throw new NotFoundError(`Topic of id ${id} not found`);
         }
 
-        const newVersionTopic = TopicFactory.createNextVersion(existingTopic, content);
+        const newVersionTopic = TopicFactory.createNextVersion(existingTopic, resources, content);
         const createdTopic = await this.topicRepository.create(newVersionTopic);
 
         return createdTopic;

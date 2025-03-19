@@ -20,7 +20,7 @@ export class TopicController {
     private getSpecificVersion = async (req: Request, res: Response) => {
         try {
             const { id, version } = req.params;
-            const topic = await this.topicService.getByIdAndVersion(Number(id), Number(version));
+            const topic = await this.topicService.getByIdAndVersion(id, Number(version));
             res.status(200).json(topic);
         } catch (err) {
             if (err instanceof AppError) {
@@ -34,7 +34,7 @@ export class TopicController {
     private getWithSubtopics = async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
-            const topic = await this.topicService.getByIdWithSubtopics(Number(id));
+            const topic = await this.topicService.getByIdWithSubtopics(id);
             res.status(200).json(topic);
         } catch (err) {
             if (err instanceof AppError) {
@@ -61,11 +61,11 @@ export class TopicController {
 
     private update = async (req: Request, res: Response) => {
         const { id } = req.params;
-        const { content } = req.body;
+        const { content, resources } = req.body;
 
         try {
             // TODO: better handle req param types
-            const topic = await this.topicService.update(Number(id), content);
+            const topic = await this.topicService.update(id, resources, content);
             res.status(200).json(topic);
         } catch (err) {
             console.error(err)
