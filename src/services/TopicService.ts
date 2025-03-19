@@ -78,7 +78,7 @@ export class TopicService {
         const newVersionTopic = TopicFactory.createNextVersion(existingTopic, resources, content);
         const createdTopic = await this.topicRepository.create(newVersionTopic);
 
-        if (resources.length) {
+        if (resources && resources.length) {
             const createdResources = await this.resourceRepository.create(newVersionTopic.resources);
             createdTopic.resources = createdResources;
         }

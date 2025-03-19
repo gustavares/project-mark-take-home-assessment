@@ -299,14 +299,11 @@ describe('TopicController', () => {
 
         describe('given only the content is being updated', () => {
             it('should update a topic by creating a new entry in the database without modifying the previous', async () => {
-                const topicData = { id: 1, name: 'Previous Topic', content: 'This is a test' };
-                const previousTopic = await topicService.create(topicData.name, topicData.content);
-
+                const previousTopic = await topicService.create('Previous Topic', 'This is a test');
                 const newContent = 'Updated content';
-                const updatedTopic = { ...previousTopic, content: newContent, version: previousTopic.version + 1 };
 
                 const response = await request(application.app)
-                    .patch(`/topic/${topicData.id}`)
+                    .patch(`/topic/${previousTopic.id}`)
                     .send({
                         content: newContent,
                     })
@@ -314,8 +311,8 @@ describe('TopicController', () => {
 
                 expect(response.status).toBe(200);
                 expect(response.body).toHaveProperty('id');
-                expect(response.body.id).toBe(1);
-                expect(response.body.name).toBe(topicData.name);
+                expect(response.body.id).toBe(previousTopic.id);
+                expect(response.body.name).toBe(previousTopic.name);
                 expect(response.body.content).toBe(newContent);
                 expect(response.body.version).toBe(2);
 
@@ -324,8 +321,8 @@ describe('TopicController', () => {
                     .first();
 
                 expect(updatedDbTopic).toBeDefined();
-                expect(updatedDbTopic.id).toBe(1);
-                expect(updatedDbTopic.name).toBe(topicData.name);
+                expect(updatedDbTopic.id).toBe(previousTopic.id);
+                expect(updatedDbTopic.name).toBe(previousTopic.name);
                 expect(updatedDbTopic.content).toBe(newContent);
                 expect(updatedDbTopic.version).toBe(2);
             });
