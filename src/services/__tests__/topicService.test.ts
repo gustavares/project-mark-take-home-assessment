@@ -1,6 +1,7 @@
 import { Resource } from "../../entities/Resource";
 import { Topic } from "../../entities/Topic";
 import { TopicFactory } from "../../factories/TopicFactory";
+import { ResourceRepository } from "../../repositories/ResourceRepository";
 import { TopicRepository } from "../../repositories/TopicRepository";
 import { DatabaseError, ValidationError } from "../../shared/errors";
 import { TopicService } from "../TopicService";
@@ -9,9 +10,13 @@ const topicRepositoryMock: jest.Mocked<TopicRepository> = {
     create: jest.fn(),
     findById: jest.fn(),
     findByIdWithSubtopics: jest.fn()
-}
+};
 
-const topicService = new TopicService(topicRepositoryMock);
+const resourceRepositoryMock: jest.Mocked<ResourceRepository> = {
+    create: jest.fn(),
+};
+
+const topicService = new TopicService(topicRepositoryMock, resourceRepositoryMock);
 
 describe('TopicService', () => {
     describe('create()', () => {

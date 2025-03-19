@@ -9,6 +9,9 @@ import { TopicRepository } from '../../../repositories/TopicRepository';
 import { SqliteTopicRepository } from '../../../repositories/SqliteTopicRepository';
 import { Topic } from '../../../entities/Topic';
 import { PatchTopicDTO, TopicDTO } from '../../../dtos/topic.dto';
+import { ResourceRepository } from '../../../repositories/ResourceRepository';
+import { SqliteResourceRepository } from '../../../repositories/SqliteResourceRepository';
+import { Resource } from '../../../entities/Resource';
 
 const DB_PATH = './db.integration/sqlite';
 
@@ -20,7 +23,8 @@ async function setup(): Promise<{ setupDb: Knex; setupApp: Application; }> {
     await runMigrations(setupDb);
 
     const topicRepository = new SqliteTopicRepository(setupDb);
-    const topicService = new TopicService(topicRepository);
+    const resourceRepository = new SqliteResourceRepository(setupDb);
+    const topicService = new TopicService(topicRepository, resourceRepository);
     const topicController = new TopicController(topicService);
     const setupApp = new Application(topicController);
     setupApp.start(3000);
@@ -220,7 +224,8 @@ describe('TopicController', () => {
             await runMigrations(db);
 
             const topicRepository = new SqliteTopicRepository(db);
-            const topicService = new TopicService(topicRepository);
+            const resourceRepository = new SqliteResourceRepository(db);
+            const topicService = new TopicService(topicRepository, resourceRepository);
             const topicController = new TopicController(topicService);
             application = new Application(topicController);
             application.start(3000);
@@ -269,13 +274,15 @@ describe('TopicController', () => {
         let application: Application;
         let topicService: TopicService;
         let topicRepository: TopicRepository;
+        let resourceRepository: ResourceRepository;
 
         beforeEach(async () => {
             db = await getDb(DB_PATH)
             await runMigrations(db);
 
             topicRepository = new SqliteTopicRepository(db);
-            topicService = new TopicService(topicRepository);
+            resourceRepository = new SqliteResourceRepository(db);
+            topicService = new TopicService(topicRepository, resourceRepository);
             const topicController = new TopicController(topicService);
             application = new Application(topicController);
             application.start(3000);
@@ -290,36 +297,76 @@ describe('TopicController', () => {
             }
         });
 
-        it('should update a topic by creating a new entry in the database without modifying the previous', async () => {
-            const topicData = { id: 1, name: 'Previous Topic', content: 'This is a test' };
-            const previousTopic = await topicService.create(topicData.name, topicData.content);
+        describe('given only the content is being updated', () => {
+            it('should update a topic by creating a new entry in the database without modifying the previous', async () => {
+                const topicData = { id: 1, name: 'Previous Topic', content: 'This is a test' };
+                const previousTopic = await topicService.create(topicData.name, topicData.content);
 
-            const newContent = 'Updated content';
-            const updatedTopic = { ...previousTopic, content: newContent, version: previousTopic.version + 1 };
+                const newContent = 'Updated content';
+                const updatedTopic = { ...previousTopic, content: newContent, version: previousTopic.version + 1 };
 
-            const response = await request(application.app)
-                .patch(`/topic/${topicData.id}`)
-                .send({
-                    content: newContent,
-                })
-                .set('Accept', 'application/json');
+                const response = await request(application.app)
+                    .patch(`/topic/${topicData.id}`)
+                    .send({
+                        content: newContent,
+                    })
+                    .set('Accept', 'application/json');
 
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveProperty('id');
-            expect(response.body.id).toBe(1);
-            expect(response.body.name).toBe(topicData.name);
-            expect(response.body.content).toBe(newContent);
-            expect(response.body.version).toBe(2);
+                expect(response.status).toBe(200);
+                expect(response.body).toHaveProperty('id');
+                expect(response.body.id).toBe(1);
+                expect(response.body.name).toBe(topicData.name);
+                expect(response.body.content).toBe(newContent);
+                expect(response.body.version).toBe(2);
 
-            const updatedDbTopic = await db('topic')
-                .where({ id: response.body.id, version: 2 })
-                .first();
+                const updatedDbTopic = await db('topic')
+                    .where({ id: response.body.id, version: 2 })
+                    .first();
 
-            expect(updatedDbTopic).toBeDefined();
-            expect(updatedDbTopic.id).toBe(1);
-            expect(updatedDbTopic.name).toBe(topicData.name);
-            expect(updatedDbTopic.content).toBe(newContent);
-            expect(updatedDbTopic.version).toBe(2);
+                expect(updatedDbTopic).toBeDefined();
+                expect(updatedDbTopic.id).toBe(1);
+                expect(updatedDbTopic.name).toBe(topicData.name);
+                expect(updatedDbTopic.content).toBe(newContent);
+                expect(updatedDbTopic.version).toBe(2);
+            });
+        });
+
+        describe('given a resource is being added', () => {
+            it('should update the topic by creating a new version for the topic and link resources to it', async () => {
+                const existingTopic = await topicService.create('Patch Test', 'testing resource update');
+                const patchTopicDto: PatchTopicDTO = {
+                    resources: [
+                        {
+                            topicId: existingTopic.id,
+                            topicVersion: existingTopic.version,
+                            description: 'First resource',
+                            type: 'pdf',
+                            url: 'test.pdf',
+                        }
+                    ]
+                };
+
+                const response = await request(application.app)
+                    .patch(`/topic/${existingTopic.id}`)
+                    .send(patchTopicDto)
+                    .set('Accept', 'application/json');
+
+                expect(response.status).toBe(200);
+                expect(response.body).toHaveProperty('id');
+                expect(response.body.id).toBe(existingTopic.id);
+                expect(response.body.resources).toHaveLength(1);
+                expect(response.body.version).toBe(2);
+
+                const updatedDbTopic: Topic = await db('topic').select('*').where({ id: response.body.id, version: 2 }).first();
+                const resources = await db('resource').select('*').where({ topicId: response.body.id, topicVersion: 2 }) as Resource[];
+
+                expect(updatedDbTopic).toBeDefined();
+                expect(updatedDbTopic.id).toBe(response.body.id);
+                expect(updatedDbTopic.version).toBe(2);
+                expect(resources).toHaveLength(1);
+                expect(resources[0].description).toBe(patchTopicDto.resources[0].description);
+
+            });
         });
     });
 });

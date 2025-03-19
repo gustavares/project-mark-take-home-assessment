@@ -1,11 +1,15 @@
 import { Resource } from "../entities/Resource";
 import { Topic } from "../entities/Topic";
 import { TopicFactory } from "../factories/TopicFactory";
+import { ResourceRepository } from "../repositories/ResourceRepository";
 import { TopicRepository } from "../repositories/TopicRepository";
 import { NotFoundError, ValidationError } from "../shared/errors";
 
 export class TopicService {
-    constructor(private topicRepository: TopicRepository) { }
+    constructor(
+        private topicRepository: TopicRepository,
+        private resourceRepository: ResourceRepository
+    ) { }
 
     async getByIdAndVersion(id: string, version: number): Promise<Topic> {
         try {
@@ -73,6 +77,11 @@ export class TopicService {
 
         const newVersionTopic = TopicFactory.createNextVersion(existingTopic, resources, content);
         const createdTopic = await this.topicRepository.create(newVersionTopic);
+
+        if (resources.length) {
+            const createdResources = await this.resourceRepository.create(newVersionTopic.resources);
+            createdTopic.resources = createdResources;
+        }
 
         return createdTopic;
     }
