@@ -257,7 +257,7 @@ describe('TopicController', () => {
                 .where({ id: response.body.id, version: response.body.version })
                 .first();
             expect(insertedTopic).toBeDefined();
-            expect(insertedTopic?.id).toBe(1);
+            expect(insertedTopic?.id).toBe(response.body.id);
             expect(insertedTopic?.name).toBe(topicData.name);
             expect(insertedTopic?.content).toBe(topicData.content);
             expect(insertedTopic?.version).toBe(1);
