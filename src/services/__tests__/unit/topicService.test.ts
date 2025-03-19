@@ -1,10 +1,10 @@
-import { Resource } from "../../entities/Resource";
-import { Topic } from "../../entities/Topic";
-import { TopicFactory } from "../../factories/TopicFactory";
-import { ResourceRepository } from "../../repositories/ResourceRepository";
-import { TopicRepository } from "../../repositories/TopicRepository";
-import { DatabaseError, ValidationError } from "../../shared/errors";
-import { TopicService } from "../TopicService";
+import { Resource } from "../../../entities/Resource";
+import { Topic } from "../../../entities/Topic";
+import { TopicFactory } from "../../../factories/TopicFactory";
+import { ResourceRepository } from "../../../repositories/ResourceRepository";
+import { TopicRepository } from "../../../repositories/TopicRepository";
+import { DatabaseError, ValidationError } from "../../../shared/errors";
+import { TopicService } from "../../TopicService";
 
 const topicRepositoryMock: jest.Mocked<TopicRepository> = {
     create: jest.fn(),

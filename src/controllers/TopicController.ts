@@ -13,7 +13,6 @@ export class TopicController {
         this.router.get('/:id/version/:version', this.getSpecificVersion);
         this.router.get('/:id/subtopics', this.getWithSubtopics);
         this.router.post('/', this.create);
-        // TODO: update route to be just /:id, users should not be able to update a previous version of a topic, just the latest one
         this.router.patch('/:id', this.update);
     }
 
