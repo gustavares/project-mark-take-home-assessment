@@ -4,6 +4,7 @@ import { Application } from './Application';
 import { TopicController } from './controllers/TopicController';
 import { SqliteTopicRepository } from './repositories/SqliteTopicRepository';
 import { TopicService } from './services/TopicService';
+import { SqliteResourceRepository } from './repositories/SqliteResourceRepository';
 
 describe('Application', () => {
     let app: Application;
@@ -14,7 +15,8 @@ describe('Application', () => {
         await runMigrations(db);
 
         const topicRepository = new SqliteTopicRepository(db);
-        const topicService = new TopicService(topicRepository);
+        const resourceRepository = new SqliteResourceRepository(db);
+        const topicService = new TopicService(topicRepository, resourceRepository);
         const topicController = new TopicController(topicService);
         app = new Application(topicController);
     });
@@ -26,5 +28,5 @@ describe('Application', () => {
     it('should have express app', () => {
         expect(app.app).toBeDefined();
         expect(app.app).toHaveProperty('listen');
-    })
+    });
 });

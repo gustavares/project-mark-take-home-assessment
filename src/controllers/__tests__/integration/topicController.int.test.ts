@@ -1,7 +1,6 @@
 import fs from 'fs'
 import { Knex } from 'knex';
 import request from 'supertest';
-import { getDb, runMigrations } from '../../../../knexfile';
 import { Application } from '../../../Application';
 import { TopicController } from '../../TopicController';
 import { TopicService } from '../../../services/TopicService';
@@ -12,6 +11,7 @@ import { PatchTopicDTO, TopicDTO } from '../../../dtos/topic.dto';
 import { ResourceRepository } from '../../../repositories/ResourceRepository';
 import { SqliteResourceRepository } from '../../../repositories/SqliteResourceRepository';
 import { Resource } from '../../../entities/Resource';
+import { getDb, runMigrations } from '../../../repositories/sqlite';
 
 const DB_PATH = './db.integration/sqlite';
 
@@ -19,7 +19,11 @@ let db: Knex;
 let application: Application;
 
 async function setup(): Promise<{ setupDb: Knex; setupApp: Application; }> {
-    const setupDb = await getDb(DB_PATH)
+    if (!fs.existsSync("./db.integration")) {
+        console.log('CREATING DB FOLDER')
+        fs.mkdirSync("./db.integration", { recursive: true });
+    }
+    const setupDb = getDb(DB_PATH)
     await runMigrations(setupDb);
 
     const topicRepository = new SqliteTopicRepository(setupDb);

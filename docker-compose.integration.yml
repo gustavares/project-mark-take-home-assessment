@@ -1,8 +1,9 @@
 services:
   db:
-    image: keinos/sqlite3:3.47.2
+    # image: keinos/sqlite3:3.47.2
+    image: nouchka/sqlite3:latest
     container_name: sqlite3
     restart: always
     command: tail -f /dev/null
     volumes:
-      - ./db/:/db/
+      - ./db.integration/:/db.integration/
